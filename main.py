@@ -56,6 +56,13 @@ def img_process():
 
 
 def to_wav():
+
+    if args.src_dir is None:
+        raise Exception("missing argument src_dir")
+
+    if args.des_file is None:
+        args.des_file = args.src_file.replace(".mp4", ".wav")
+
     print("[src_file] source : {}".format(args.src_file))
     print("[des_file] target : {}".format(args.des_file))
     video_process.convert_mp4_to_wav(args.src_file, args.des_file)
@@ -63,6 +70,9 @@ def to_wav():
 
 if __name__ == '__main__':
     args = parse_arguments()
+
+    args.cmd = "2wav"
+    args.src_file = "D:/work/ai/set/psplive/dousha/audio/20240214_words.mp4"
 
     cmd = args.cmd.lower()
 
