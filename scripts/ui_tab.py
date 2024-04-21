@@ -6,7 +6,7 @@ import modules.scripts as scripts
 from modules import script_callbacks
 from modules.shared import opts
 
-from scripts.service import service_img
+from scripts.service import image_process
 
 FN_GO_RUNNING = False
 
