@@ -57,8 +57,8 @@ def img_process():
 
 def to_wav():
 
-    if args.src_dir is None:
-        raise Exception("missing argument src_dir")
+    if args.src_file is None:
+        raise Exception("missing argument --src-file")
 
     if args.des_file is None:
         args.des_file = args.src_file.replace(".mp4", ".wav")
