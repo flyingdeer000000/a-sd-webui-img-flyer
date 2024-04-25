@@ -71,8 +71,8 @@ def to_wav():
 if __name__ == '__main__':
     args = parse_arguments()
 
-    args.cmd = "2wav"
-    args.src_file = "D:/work/ai/set/psplive/dousha/audio/20240214_words.mp4"
+    # args.cmd = "2wav"
+    # args.src_file = "D:/work/ai/set/psplive/dousha/audio/20240214_words.mp4"
 
     cmd = args.cmd.lower()
 
