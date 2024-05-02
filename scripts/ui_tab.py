@@ -32,7 +32,8 @@ def fn_go(
         rembg_model,
         is_resize,
         resize_width,
-        resize_height
+        resize_height,
+        resize_color,
 ):
     global FN_GO_RUNNING
 
@@ -55,11 +56,16 @@ def fn_go(
         else:
             print("[img process] image keep original size")
 
-        service_img.process(
+        resize_color = resize_color.strip()
+        if resize_color == "" or resize_color is None:
+            resize_color = "0,0,0,0"
+
+        image_process.process(
             src_dir=str(dir_src),
             des_dir=str(dir_des),
             r_width=int(resize_width),
             r_height=int(resize_height),
+
             resize_exec=bool(is_resize),
             rembg_model=str(rembg_model),
             recursive_depth=int(num_depth),
@@ -114,6 +120,11 @@ def on_ui_tabs():
                         value=True,
                         label="Image Resize"
                     )
+                    textbox_resize_color = gr.Textbox(
+                        label='Resize Color (RGBA)',
+                        value="0,0,0,0",
+                        placeholder='0,0,0,0'
+                    )
                     slider_w = gr.Slider(label="resize width", minimum=64, maximum=2048, value=512, step=64,
                                          interactive=True)
                     slider_h = gr.Slider(label="resize height", minimum=64, maximum=2048, value=512, step=64,
@@ -129,6 +140,7 @@ def on_ui_tabs():
             checkbox_resize,
             slider_w,
             slider_h,
+            textbox_resize_color,
         ], [])
 
     return [(flyer_editor, "Flyer", "flyer_editor")]

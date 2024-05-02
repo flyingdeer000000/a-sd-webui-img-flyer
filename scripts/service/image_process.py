@@ -13,9 +13,17 @@ def file_count(target, suffix="*.png"):
     return len(files)
 
 
+def color_string_to_tuple(color_string):
+    if color_string is None or len(color_string) == 0:
+        return 0, 0, 0, 0
+    color_values = color_string.strip().split(",")
+    return tuple(float(value) for value in color_values)
+
+
 def remove_background(
         rem_src_dir: str,
         rem_des_dir: str,
+        bg_color_str: str,
         session,
 ):
     if session is None:
@@ -45,10 +53,16 @@ def remove_background(
         print("")
 
 
-def resize(input_path, output_path, to_width=512, to_height=512):
+def resize(
+        input_path, output_path,
+        to_width=512, to_height=512,
+        base_color="0,0,0,0"
+):
     image = Image.open(input_path)
     ratio = image.width / image.height
     to_ratio = to_width / to_height
+
+    color_tuple = color_string_to_tuple(base_color)
 
     if ratio > to_ratio:
         new_width = to_width
@@ -61,7 +75,7 @@ def resize(input_path, output_path, to_width=512, to_height=512):
     resized_image = image.resize((new_width, new_height))
 
     # Create a new image with the desired dimensions and transparent background
-    padded_image = Image.new("RGBA", (to_width, to_height), (0, 0, 0, 0))
+    padded_image = Image.new("RGBA", (to_width, to_height), color_tuple)
 
     # Calculate the padding offsets
     x_offset = (to_width - new_width) // 2
@@ -74,7 +88,13 @@ def resize(input_path, output_path, to_width=512, to_height=512):
     padded_image.save(output_path)
 
 
-def resize_directory(resize_src_dir, resize_des_dir, width=512, height=512):
+def resize_directory(
+        resize_src_dir,
+        resize_des_dir,
+        width=512,
+        height=512,
+        resize_color="0,0,0,0",
+):
     print("[resize] {} ---> {} ".format(resize_src_dir, resize_des_dir))
 
     if width <= 0:
@@ -88,7 +108,7 @@ def resize_directory(resize_src_dir, resize_des_dir, width=512, height=512):
         if filename.lower().endswith('.png'):
             image_path = os.path.join(resize_src_dir, filename)
             output_path = os.path.join(resize_des_dir, filename)
-            resize(image_path, output_path, width, height)
+            resize(image_path, output_path, width, height, resize_color)
             index = index + 1
             print("[resize] [{}/{}] {} ".format(index, total, output_path))
 
@@ -100,9 +120,11 @@ def process(
         src_dir,
         des_dir,
         r_width=512, r_height=512,
+        r_color="",
         resize_exec=True,
         rembg_model="",
-        recursive_depth=None
+        rembg_color="",
+        recursive_depth=None,
 ):
     start_time = time.time()
 
@@ -111,6 +133,7 @@ def process(
         des_dir = str(des_dir)
         r_width = int(r_width)
         r_height = int(r_height)
+        r_color = str(r_color).strip()
         resize_exec = bool(resize_exec)
         rembg_model = str(rembg_model)
         recursive_depth = int(recursive_depth)
@@ -149,11 +172,11 @@ def process(
 
             if rembg_session is None:
                 if resize_exec:
-                    resize_directory(root, des_path, r_width, r_height)
+                    resize_directory(root, des_path, r_width, r_height, r_color)
             else:
                 remove_background(root, des_path, rembg_session)
                 if resize_exec:
-                    resize_directory(des_path, des_path, r_width, r_height)
+                    resize_directory(des_path, des_path, r_width, r_height, r_color)
     finally:
         elapsed_time = time.time() - start_time
         print(f"[process] elapsed time: {elapsed_time} seconds")

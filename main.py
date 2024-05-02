@@ -17,7 +17,10 @@ def parse_arguments():
 
     parser.add_argument('--src-dir', dest='src_dir', help='Source directory')
     parser.add_argument('--des-dir', dest='des_dir', help='Target directory (default: output)')
+
     parser.add_argument('--resize', dest='resize', default='512x512', help='Resize size (default: 512x512)')
+    parser.add_argument('--resize-color', dest='resize_color', default='0,0,0,0')
+
     parser.add_argument('--rembg-model', dest='rembg_model', default='isnet-anime',
                         help='Remove background model (default: isnet-anime)')
     parser.add_argument('--depth', dest='dir_depth', type=int, default=0,
@@ -29,13 +32,16 @@ def parse_arguments():
 
 def img_process():
     resize_width, resize_height = map(int, args.resize.split('x'))
+
+
+
     if args.rembg_model.lower() == 'resize':
         rembg_model = ''
     else:
         rembg_model = args.rembg_model
     print("[directory] source : {}".format(args.src_dir))
     print("[directory] target : {}".format(args.des_dir))
-    print("[resize] parameter size: {} x {}".format(resize_width, resize_height))
+    print("[resize] parameter size: {} x {} , color: {}".format(resize_width, resize_height, color_tuple))
     print("[remove background] model: {}".format(rembg_model))
     print("[recursive] depth: {}".format(args.dir_depth))
     if not os.path.exists(args.src_dir):
@@ -50,6 +56,7 @@ def img_process():
         des_dir=des_dir,
         r_width=resize_width,
         r_height=resize_height,
+        r_color=color_tuple,
         rembg_model=rembg_model,
         recursive_depth=args.dir_depth,
     )
