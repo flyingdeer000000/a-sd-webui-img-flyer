@@ -147,7 +147,7 @@ def testing(a):
     a.src_dir = 'D:/work/ai/models/psplive/dousha/school/512x768_white/1'
     a.des_dir = 'D:/work/ai/models/psplive/dousha/school/512x768_white/2'
     a.resize = '512x768'
-    a.resize_color = '255,13,85,1'
+    a.resize_color = '255,13,85,256'
     a.rembg_model = 'none'
 
     return a

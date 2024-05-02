@@ -1,7 +1,7 @@
 import time
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, ImageDraw
 import rembg
 import os
 import glob
@@ -90,9 +90,16 @@ def resize(
     # Create a new image with the desired dimensions and transparent background
     padded_image = Image.new("RGBA", (to_width, to_height), color_tuple)
 
+    # fill color
+    """
+    if color_tuple[3] > 0:
+        draw = ImageDraw.Draw(padded_image)
+        draw.rectangle([(0, 0), (to_width, to_height)], fill=color_tuple)
+    """
+
     # Calculate the padding offsets
     x_offset = (to_width - new_width) // 2
-    y_offset = (to_height - new_height) // 2
+    y_offset = (to_height - new_height)
 
     # Paste the resized image onto the padded image with transparent pixels
     padded_image.paste(resized_image, (x_offset, y_offset))
