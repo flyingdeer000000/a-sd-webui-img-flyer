@@ -6,19 +6,32 @@ from scripts.service import image_process, video_process
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Image processing script')
 
-    parser.add_argument('--cmd', dest='cmd', required=True, help='command to perform')
+    # parser.add_argument('--cmd', dest='cmd', required=True, help='command to perform')
 
     subparsers = parser.add_subparsers(dest='subcmd')
 
     # img
     img_parser = subparsers.add_parser('img', help='perform image processing')
     img_parser.add_argument('--src-dir', dest='src_dir', help='source directory')
-    img_parser.add_argument('--des-dir', dest='des_dir', help='target directory (default: output)')
-    img_parser.add_argument('--resize', dest='resize', default='512x512', help='resize size (default: 512x512)')
-    img_parser.add_argument('--resize-color', dest='resize_color', default='0,0,0,0', help='resize color')
-    img_parser.add_argument('--rembg-model', dest='rembg_model', default='isnet-anime',
+    img_parser.add_argument('--des-dir',
+                            dest='des_dir',
+                            help='target directory (default: output)')
+    img_parser.add_argument('--resize',
+                            dest='resize',
+                            default='512x512',
+                            help='resize size (default: 512x512)')
+    img_parser.add_argument('--resize-color',
+                            dest='resize_color',
+                            type=str, default='',
+                            help='resize color')
+    img_parser.add_argument('--rembg-model',
+                            dest='rembg_model',
+                            type=str, default='isnet-anime',
                             help='remove background model (default: isnet-anime)')
-    img_parser.add_argument('--depth', dest='dir_depth', type=int, default=0, help='recursive depth (default: 0)')
+    img_parser.add_argument('--depth',
+                            dest='dir_depth',
+                            type=int, default=0,
+                            help='recursive depth (default: 0)')
 
     # to_wav
     wav_parser = subparsers.add_parser('2wav', aliases=['to_wav'], help='convert video to WAV')
@@ -26,11 +39,23 @@ def parse_arguments():
     wav_parser.add_argument('--des-file', dest='des_file', help='target file')
 
     # split
-    split_parser = subparsers.add_parser('split', help='split videos based on duration')
-    split_parser.add_argument('--src-dir', dest='src_dir', help='source directory')
-    split_parser.add_argument('--des-dir', dest='des_dir', help='target directory (default: output)')
-    split_parser.add_argument('--divider', dest='divider', help='divider (default: 2)')
-    split_parser.add_argument('--file-ext', dest='file_ext', help='file extension (default: wav')
+    split_parser = subparsers.add_parser('split',
+                                         help='split videos based on duration')
+    split_parser.add_argument('--src-dir',
+                              dest='src_dir',
+                              help='source directory')
+    split_parser.add_argument('--des-dir',
+                              dest='des_dir',
+                              type=str, default="",
+                              help='target directory (default: output)')
+    split_parser.add_argument('--divider',
+                              dest='divider',
+                              type=int, default=2,
+                              help='divider (default: 2)')
+    split_parser.add_argument('--file-ext',
+                              dest='file_ext',
+                              type=str, default='wav',
+                              help='file extension (default: wav')
 
     return parser.parse_args()
 
@@ -98,13 +123,13 @@ def split(args):
 if __name__ == '__main__':
     args = parse_arguments()
 
-    print("[cmd] {}".format(args.cmd))
+    print("[cmd] {}".format(args.subcmd))
 
-    if args.cmd == 'img':
+    if args.subcmd == 'img':
         img_process(args)
-    elif args.cmd == '2wav' or args.cmd == 'to_wav':
+    elif args.subcmd == '2wav' or args.subcmd == 'to_wav':
         to_wav(args)
-    elif args.cmd == 'split':
+    elif args.subcmd == 'split':
         split(args)
 
     print("[fin]")
