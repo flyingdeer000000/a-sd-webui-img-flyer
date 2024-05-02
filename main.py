@@ -28,6 +28,10 @@ def parse_arguments():
                             dest='rembg_model',
                             type=str, default='isnet-anime',
                             help='remove background model (default: isnet-anime)')
+    img_parser.add_argument('--rembg-color',
+                            dest='rembg_color',
+                            type=str, default='',
+                            help='padding color after remove background (default=transparent)')
     img_parser.add_argument('--depth',
                             dest='dir_depth',
                             type=int, default=0,
@@ -66,17 +70,20 @@ def parse_arguments():
 
 def img_process(args):
     resize_width, resize_height = map(int, args.resize.split('x'))
-    resize_color = args.resize_color.strip()
 
     if args.rembg_model.lower() == 'resize':
         rembg_model = ''
     else:
         rembg_model = args.rembg_model
 
+    args.resize_color = getattr(args, 'resize_color', '0,0,0,0')
+    args.rembg_color = getattr(args, 'rembg_color', '0,0,0,0')
+    args.dir_depth = getattr(args, 'dir_depth', 0)
+
     print("[directory] source: {}".format(args.src_dir))
     print("[directory] target: {}".format(args.des_dir))
-    print("[resize] size: {} x {}, color: {}".format(resize_width, resize_height, resize_color))
-    print("[remove background] model: {}".format(rembg_model))
+    print("[resize] size: {} x {} | color: {}".format(resize_width, resize_height, args.resize_color))
+    print("[remove background] model: {} | color: {}".format(rembg_model, args.rembg_color))
     print("[recursive] depth: {}".format(args.dir_depth))
 
     if not os.path.exists(args.src_dir):
@@ -93,8 +100,9 @@ def img_process(args):
         des_dir=des_dir,
         r_width=resize_width,
         r_height=resize_height,
-        r_color=resize_color,
+        r_color=args.resize_color,
         rembg_model=rembg_model,
+        rembg_color=args.rembg_color,
         recursive_depth=args.dir_depth,
     )
 
@@ -133,8 +141,23 @@ def sum_duration(args):
     print("Total Duration: {}".format(time))
 
 
+def testing(a):
+
+    a.subcmd = 'img'
+    a.src_dir = 'D:/work/ai/models/psplive/dousha/school/512x768_white/1'
+    a.des_dir = 'D:/work/ai/models/psplive/dousha/school/512x768_white/2'
+    a.resize = '512x768'
+    a.resize_color = '255,13,85,1'
+    a.rembg_model = 'none'
+
+    return a
+
+
 if __name__ == '__main__':
+
     args = parse_arguments()
+
+    args = testing(args)
 
     print("[cmd] {}".format(args.subcmd))
 

@@ -17,14 +17,14 @@ def color_string_to_tuple(color_string):
     if color_string is None or len(color_string) == 0:
         return 0, 0, 0, 0
     color_values = color_string.strip().split(",")
-    return tuple(float(value) for value in color_values)
+    return tuple(int(value) for value in color_values)
 
 
 def remove_background(
         rem_src_dir: str,
         rem_des_dir: str,
         bg_color_str: str,
-        session,
+        session
 ):
     if session is None:
         return
@@ -34,6 +34,8 @@ def remove_background(
     os.makedirs(rem_des_dir, mode=777, exist_ok=True)
 
     files = Path(rem_src_dir).glob('*.[pP][nN][gG]')
+
+    rgba_color = color_string_to_tuple(bg_color_str)
 
     index = 0
     total = file_count(rem_src_dir)
@@ -49,8 +51,19 @@ def remove_background(
                 index = index + 1
                 print("[rembg] [{}/{}] {}".format(index, total, output_path))
 
+                # Fill with RGBA color
+                fill_background(output_path, rgba_color)
+
     if total > 0:
         print("")
+
+
+def fill_background(image_path, bg_color):
+    image = Image.open(image_path)
+    width, height = image.size
+    background = Image.new('RGBA', (width, height), bg_color)
+    background.paste(image, (0, 0), mask=image.convert('RGBA'))
+    background.save(image_path)
 
 
 def resize(
@@ -165,7 +178,10 @@ def process(
                 continue
 
             dir_name = os.path.basename(root)
-            des_path = str(os.path.join(des_dir, dir_name))
+            if depth <= 0:
+                des_path = des_dir
+            else:
+                des_path = str(os.path.join(des_dir, dir_name))
 
             print("[process] root: {}, depth: {}, max depth: {}".format(root, depth, recursive_depth))
             print("[process] name: {}, to: {}".format(dir_name, des_path))
@@ -174,7 +190,7 @@ def process(
                 if resize_exec:
                     resize_directory(root, des_path, r_width, r_height, r_color)
             else:
-                remove_background(root, des_path, rembg_session)
+                remove_background(root, des_path, rembg_color, rembg_session)
                 if resize_exec:
                     resize_directory(des_path, des_path, r_width, r_height, r_color)
     finally:
