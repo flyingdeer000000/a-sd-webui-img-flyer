@@ -22,7 +22,7 @@ def duration_get(file_path):
     return duration
 
 
-def duration_split(input_dir, output_dir, num_parts=2, file_ext=".wav"):
+def duration_split(input_dir, output_dir, num_parts=2, file_ext="wav"):
     if not input_dir:
         print("Input directory not provided.")
         return
@@ -33,7 +33,7 @@ def duration_split(input_dir, output_dir, num_parts=2, file_ext=".wav"):
     os.makedirs(output_dir, exist_ok=True)
 
     for file_name in os.listdir(input_dir):
-        if file_name.endswith(file_ext):
+        if file_name.endswith("." + file_ext):
             file_path = os.path.join(input_dir, file_name)
             duration = duration_get(file_path)
             part_duration = duration / num_parts
@@ -45,7 +45,7 @@ def duration_split(input_dir, output_dir, num_parts=2, file_ext=".wav"):
             base_name = os.path.splitext(file_name)[0]
 
             for i in range(num_parts):
-                part_output_file = os.path.join(output_dir, f"{base_name}_part{i + 1}{file_ext}")
+                part_output_file = os.path.join(output_dir, f"{base_name}_part{i + 1}.{file_ext}")
                 start_time = i * part_duration
                 ffmpeg_split_command = f'ffmpeg -i "{file_path}" -ss {start_time} -t {part_duration} -c copy "{part_output_file}"'
                 subprocess.call(ffmpeg_split_command, shell=True)
