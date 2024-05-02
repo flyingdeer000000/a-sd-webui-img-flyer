@@ -1,5 +1,7 @@
 import os
 import subprocess
+import concurrent.futures
+from datetime import timedelta
 
 
 def convert_mp4_to_wav(mp4_file, wav_file):
@@ -19,7 +21,36 @@ def duration_get(file_path):
     ffprobe_command = f'ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "{file_path}"'
     result = subprocess.check_output(ffprobe_command, shell=True, universal_newlines=True)
     duration = float(result)
+    print(f'{file_path} : {duration}')
     return duration
+
+
+def duration_sum(directory):
+    total_duration = 0
+
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        # Collect the futures
+        futures = []
+        for filename in os.listdir(directory):
+            filepath = os.path.join(directory, filename)
+            if os.path.isfile(filepath):
+                try:
+                    future = executor.submit(duration_get, filepath)
+                    futures.append(future)
+                except (subprocess.CalledProcessError, ValueError):
+                    continue
+
+        # Collect the results
+        for future in concurrent.futures.as_completed(futures):
+            try:
+                duration = future.result()
+                total_duration += duration
+            except Exception as e:
+                print(f"Error occurred: {e}")
+
+    return total_duration
+
+
 
 
 def duration_split(input_dir, output_dir, num_parts=2, file_ext="wav"):

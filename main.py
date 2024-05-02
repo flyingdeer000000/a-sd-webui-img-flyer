@@ -1,6 +1,6 @@
 import os
 import argparse
-from scripts.service import image_process, video_process
+from scripts.service import image_process, video_process, util
 
 
 def parse_arguments():
@@ -56,6 +56,10 @@ def parse_arguments():
                               dest='file_ext',
                               type=str, default='wav',
                               help='file extension (default: wav')
+
+    # sum_duration
+    sum_parser = subparsers.add_parser('sum_duration', help='sum directory media file duration')
+    sum_parser.add_argument('--dir', required=True, dest='directory', help='directory path')
 
     return parser.parse_args()
 
@@ -120,6 +124,15 @@ def split(args):
     video_process.duration_split(args.src_dir, args.des_dir, args.divider, args.file_ext)
 
 
+def sum_duration(args):
+    if args.directory is None:
+        raise Exception("missing argument --dir")
+
+    total_sec = video_process.duration_sum(args.directory)
+    time = util.format_time(total_sec)
+    print("Total Duration: {}".format(time))
+
+
 if __name__ == '__main__':
     args = parse_arguments()
 
@@ -131,5 +144,7 @@ if __name__ == '__main__':
         to_wav(args)
     elif args.subcmd == 'split':
         split(args)
+    elif args.subcmd == 'sum_duration':  # Handle the sum subcommand
+        sum_duration(args)
 
     print("[fin]")
