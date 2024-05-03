@@ -263,9 +263,11 @@ def process(
             else:
                 des_path = str(os.path.join(des_dir, dir_name))
 
-            print("[process] root: {}, depth: {}, max depth: {}".format(root, depth, recursive_depth))
-            print("[process] name: {}, to: {}".format(dir_name, des_path))
-
+            print("[img-process] root: {}, depth: {}, max depth: {}".format(root, depth, recursive_depth))
+            print("[img-process] name: {}, to: {}".format(dir_name, des_path))
+            print("[img-process] resize: {}x{} | fill: {} | remove: {}"
+                  .format(resize_width, resize_height, resize_fill_color, resize_remove_color))
+            print("[img-process] rembg_model: {} | fill {}".format(rembg_model, rembg_color))
 
             if rembg_session is None:
                 if resize_exec:
