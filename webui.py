@@ -117,5 +117,5 @@ def webui(port):
     )
 
 
-if __name__ == '__main__':
+if __name__ == '__webui__':
     webui(10005)
