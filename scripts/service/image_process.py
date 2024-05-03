@@ -1,3 +1,4 @@
+import concurrent
 import time
 from pathlib import Path
 
@@ -7,8 +8,21 @@ import os
 
 from scripts.service import util
 
+"""
+    return (abs(r1 - r2) <= threshold
+            and abs(g1 - g2) <= threshold
+            and abs(b1 - b2) <= threshold)
+    """
 
-def color_to_transparent(image, target_str: str):
+
+def color_distance(color1, color2):
+    # Calculate the Euclidean distance between two colors
+    r1, g1, b1 = color1[0], color1[1], color2[2]
+    r2, g2, b2 = color2[0], color2[1], color2[2]
+    return ((r1 - r2) ** 2 + (g1 - g2) ** 2 + (b1 - b2) ** 2) ** 0.5
+
+
+def color_to_transparent(image, target_str, threshold=100):
     # Split the image into individual color channels
 
     if target_str == 'auto' or target_str == 'def':
@@ -16,19 +30,19 @@ def color_to_transparent(image, target_str: str):
     else:
         target = util.color_string_to_tuple(target_str)
 
-    red, green, blue, alpha = image.split()
+    # Get the pixel data from the image
+    pixel_data = image.load()
 
-    # Create a mask of the color to make transparent
-    mask = red.point(lambda x: 0 if x == target[0] else 255)
-    mask = mask.point(lambda x: 0 if x == green.getpixel((0, 0)) else 255)
-    mask = mask.point(lambda x: 0 if x == blue.getpixel((0, 0)) else 255)
-
-    # Apply the mask to the alpha channel
-    alpha = alpha.point(lambda x: x if x != 0 else 0)
-    alpha.paste(0, mask)
-
-    # Combine the color channels with the modified alpha channel
-    image = Image.merge('RGBA', (red, green, blue, alpha))
+    # Iterate over each pixel
+    width, height = image.size
+    for y in range(height):
+        for x in range(width):
+            # Check if the pixel color is similar to the target color
+            p = pixel_data[x, y]
+            distance = color_distance(p, target)
+            if distance <= threshold:
+                # Set the pixel to transparent
+                pixel_data[x, y] = (0, 0, 0, 0)
 
     return image
 
@@ -154,30 +168,44 @@ def resize_image(
     padded_image.save(output_path)
 
 
+def resize_job(image_path, output_path, width, height, fill_color, remove_color, index, total):
+    resize_image(image_path, output_path, width, height, fill_color, remove_color)
+    print("[resize] [{}/{}] {}".format(index, total, output_path))
+
+
 def resize_directory(
         resize_src_dir,
         resize_des_dir,
-        width=512,
-        height=512,
-        fill_color="0,0,0,0",
-        remove_color="",
+        width=512, height=512,
+        fill_color="0,0,0,0", remove_color=""
 ):
     print("[resize] {} ---> {} ".format(resize_src_dir, resize_des_dir))
 
     if width <= 0:
         width = 512
 
-    os.makedirs(resize_des_dir, mode=777, exist_ok=True)
+    os.makedirs(resize_des_dir, mode=0o777, exist_ok=True)
 
-    index = 0
-    total = util.file_count(resize_src_dir)
+    file_list = []
     for filename in os.listdir(resize_src_dir):
         if filename.lower().endswith('.png'):
             image_path = os.path.join(resize_src_dir, filename)
             output_path = os.path.join(resize_des_dir, filename)
-            resize_image(image_path, output_path, width, height, fill_color, remove_color)
-            index = index + 1
-            print("[resize] [{}/{}] {} ".format(index, total, output_path))
+            file_list.append((image_path, output_path))
+
+    total = len(file_list)
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        futures = []
+        for index, (image_path, output_path) in enumerate(file_list, start=1):
+            future = executor.submit(resize_job, image_path, output_path, width, height, fill_color, remove_color,
+                                     index, total)
+            futures.append(future)
+
+        for future in concurrent.futures.as_completed(futures):
+            try:
+                future.result()
+            except Exception as e:
+                print("An error occurred while processing an image:", str(e))
 
     if total > 0:
         print("")
