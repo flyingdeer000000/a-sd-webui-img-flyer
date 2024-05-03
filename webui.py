@@ -85,7 +85,8 @@ def img_process_interface(
         resize,
         resize_fill_color, resize_fill_alpha,
         resize_remove_color, resize_remove_alpha,
-        rembg_model, rembg_color,
+        rembg_model,
+        rembg_color, rembg_alpha,
         dir_depth
 ):
     # Convert string resize '512x512' into two integers
@@ -95,7 +96,7 @@ def img_process_interface(
         os.makedirs(des_dir)
 
     if resize_fill_alpha < 0:
-        resize_fill_color = "rgba(0,0,0,0)"
+        resize_fill_color = ''
     else:
         resize_fill_color = resize_fill_color + hex(resize_fill_alpha)[2:].zfill(2)
 
@@ -105,6 +106,11 @@ def img_process_interface(
         resize_remove_color = 'auto'
     else:
         resize_remove_color = resize_remove_color + hex(resize_fill_alpha)[2:].zfill(2)
+
+    if rembg_alpha <= 0:
+        rembg_color = ''
+    else:
+        rembg_color = rembg_color + hex(rembg_alpha)[2:].zfill(2)
 
     image_process.process(
         src_dir=src_dir,
@@ -169,6 +175,7 @@ def tab_image_process():
             ]
         )
         rembg_color = gr.ColorPicker(label="Remove Background Color")
+        rembg_alpha = gr.Slider(label="Remove Background Alpha", value=-1, minimum=-1, maximum=255)
     with gr.Row():
         dir_depth = gr.Number(label="Directory Depth", value=0)
         run_img = gr.Button("Run Image Processing")
@@ -180,7 +187,8 @@ def tab_image_process():
                 resize,
                 resize_fill_color, resize_fill_alpha,
                 resize_remove_color, resize_remove_alpha,
-                rembg_model, rembg_color,
+                rembg_model,
+                rembg_color, rembg_alpha,
                 dir_depth],
         outputs=[result]
     )
