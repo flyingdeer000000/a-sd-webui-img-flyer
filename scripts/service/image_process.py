@@ -1,23 +1,28 @@
 import time
 from pathlib import Path
 
-from PIL import Image, ImageDraw
+from PIL import Image
 import rembg
 import os
-import glob
 
-
-def file_count(target, suffix="*.png"):
-    pattern = os.path.join(target, suffix)
-    files = glob.glob(pattern)
-    return len(files)
+from scripts.service import util
 
 
 def color_string_to_tuple(color_string):
     if color_string is None or len(color_string) == 0:
         return 0, 0, 0, 0
+
     color_values = color_string.strip().split(",")
-    return tuple(int(value) for value in color_values)
+    color_values = [int(value) for value in color_values]
+
+    if len(color_values) == 3:
+        # RGB color string
+        return color_values[0], color_values[1], color_values[2], 255
+    elif len(color_values) == 4:
+        # RGBA color string
+        return tuple(color_values)
+    else:
+        raise ValueError("Invalid color string format.")
 
 
 def remove_background(
@@ -38,7 +43,7 @@ def remove_background(
     rgba_color = color_string_to_tuple(bg_color_str)
 
     index = 0
-    total = file_count(rem_src_dir)
+    total = util.file_count(rem_src_dir)
     for file in files:
         input_path = str(file)
         output_path = str(rem_des_dir + os.path.sep + (file.stem + file.suffix))
@@ -123,7 +128,7 @@ def resize_directory(
     os.makedirs(resize_des_dir, mode=777, exist_ok=True)
 
     index = 0
-    total = file_count(resize_src_dir)
+    total = util.file_count(resize_src_dir)
     for filename in os.listdir(resize_src_dir):
         if filename.lower().endswith('.png'):
             image_path = os.path.join(resize_src_dir, filename)
