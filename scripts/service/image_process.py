@@ -254,7 +254,7 @@ def process(
 
             # Skip if max_depth is specified and the current depth exceeds it
             if recursive_depth is not None and depth > recursive_depth:
-                print("[process] max recursive depth reached {} > {}".format(depth, recursive_depth))
+                # print("[img-process] max recursive depth reached {} > {}".format(depth, recursive_depth))
                 continue
 
             dir_name = os.path.basename(root)
@@ -286,4 +286,4 @@ def process(
                     )
     finally:
         elapsed_time = time.time() - start_time
-        print(f"[process] elapsed time: {elapsed_time} seconds")
+        print(f"[img-process] elapsed time: {elapsed_time} seconds")
