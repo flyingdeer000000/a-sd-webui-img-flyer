@@ -8,12 +8,6 @@ import os
 
 from scripts import util
 
-"""
-    return (abs(r1 - r2) <= threshold
-            and abs(g1 - g2) <= threshold
-            and abs(b1 - b2) <= threshold)
-    """
-
 
 def color_distance(color1, color2):
     # Calculate the Euclidean distance between two colors
@@ -29,6 +23,9 @@ def color_to_transparent(image, target_str, threshold=100):
         target = color_4_corners(image)
     else:
         target = util.color_string_to_tuple(target_str)
+
+    if len(target) >= 4 and target[3] <= 0:
+        return
 
     # Get the pixel data from the image
     pixel_data = image.load()
@@ -268,6 +265,7 @@ def process(
 
             print("[process] root: {}, depth: {}, max depth: {}".format(root, depth, recursive_depth))
             print("[process] name: {}, to: {}".format(dir_name, des_path))
+
 
             if rembg_session is None:
                 if resize_exec:

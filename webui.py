@@ -80,13 +80,31 @@ def capture_console_output(func):
 
 
 @capture_console_output
-def img_process_interface(src_dir, des_dir, resize, resize_fill_color, resize_remove_color, rembg_model, rembg_color,
-                          dir_depth):
+def img_process_interface(
+        src_dir, des_dir,
+        resize,
+        resize_fill_color, resize_fill_alpha,
+        resize_remove_color, resize_remove_alpha,
+        rembg_model, rembg_color,
+        dir_depth
+):
     # Convert string resize '512x512' into two integers
     resize_width, resize_height = map(int, resize.split('x'))
     # Check if directories exist, if not create
     if not os.path.exists(des_dir):
         os.makedirs(des_dir)
+
+    if resize_fill_alpha < 0:
+        resize_fill_color = "rgba(0,0,0,0)"
+    else:
+        resize_fill_color = resize_fill_color + hex(resize_fill_alpha)[2:].zfill(2)
+
+    if resize_remove_alpha < 0:
+        resize_remove_color = ''
+    elif resize_remove_alpha == 0:
+        resize_remove_color = 'auto'
+    else:
+        resize_remove_color = resize_remove_color + hex(resize_fill_alpha)[2:].zfill(2)
 
     image_process.process(
         src_dir=src_dir,
@@ -128,8 +146,10 @@ def tab_image_process():
         des_dir = gr.Textbox(label="Destination Directory")
     with gr.Row():
         resize = gr.Textbox(value="512x512", label="Resize (e.g., 512x512)")
-        resize_fill_color = gr.ColorPicker(label="Resize Fill Color")
-        resize_remove_color = gr.ColorPicker(label="Resize Remove Color")
+        resize_fill_color = gr.ColorPicker(label="Resize Fill Color", value='#000000')
+        resize_fill_alpha = gr.Slider(label="Resize Fill Alpha", value=-1, minimum=-1, maximum=255)
+        resize_remove_color = gr.ColorPicker(label="Resize Remove Color", value='#000000')
+        resize_remove_alpha = gr.Slider(label="Resize Remove Alpha", value=-1, minimum=-1, maximum=255)
     with gr.Row():
         rembg_model = gr.Dropdown(
             label="Remove Background Model  "
@@ -156,7 +176,11 @@ def tab_image_process():
         result = gr.TextArea(label="Result")
     run_img.click(
         img_process_interface,
-        inputs=[src_dir, des_dir, resize, resize_fill_color, resize_remove_color, rembg_model, rembg_color,
+        inputs=[src_dir, des_dir,
+                resize,
+                resize_fill_color, resize_fill_alpha,
+                resize_remove_color, resize_remove_alpha,
+                rembg_model, rembg_color,
                 dir_depth],
         outputs=[result]
     )
