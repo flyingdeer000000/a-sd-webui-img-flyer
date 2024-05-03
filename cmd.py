@@ -163,7 +163,7 @@ def testing(a):
     return a
 
 
-if __name__ == '__cmd__':
+if __name__ == '__main__':
     args = parse_arguments()
 
     # args = testing(args)

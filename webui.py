@@ -1,6 +1,7 @@
 import io
 import os
 import sys
+import traceback
 
 from scripts.service import image_process, video_process, util
 import gradio as gr
@@ -17,6 +18,9 @@ def capture_console_output(func):
             output = sys.stdout.getvalue()
             error = sys.stderr.getvalue()
             return result + "\n" + output + error
+        except Exception as e:
+            traceback_str = traceback.format_exc()
+            return f"Error occurred:\n{traceback_str}"
         finally:
             sys.stdout = original_stdout  # Reset stdout to original
             sys.stderr = original_stderr  # Reset stderr to original
@@ -70,23 +74,43 @@ def webui(port):
     with gr.Blocks() as demo:
         with gr.Tab("Image Processing"):
             with gr.Row():
-                src_dir = gr.Textbox(label="Source Directory")
+                src_dir = gr.Textbox(label="Source Directory", required=True)
             with gr.Row():
-                des_dir = gr.Textbox(label="Destination Directory")
+                des_dir = gr.Textbox(label="Destination Directory", required=True)
             with gr.Row():
-                resize = gr.Textbox(value="512x512", label="Resize (e.g., 512x512)")
+                resize = gr.Textbox(value="512x512", label="Resize (e.g., 512x512)", required=True)
                 resize_fill_color = gr.Textbox(label="Resize Fill Color")
                 resize_remove_color = gr.Textbox(label="Resize Remove Color")
-                rembg_model = gr.Textbox(label="Remove Background Model")
-                rembg_color = gr.Textbox(label="Remove Background Color")
-                dir_depth = gr.Number(label="Directory Depth", value=0)
             with gr.Row():
+                rembg_model = gr.Dropdown(
+                    label="Remove Background Model  "
+                          "| 'none' for no removing  "
+                          "| first time executing takes a while  ",
+                    value="isnet-anime",
+                    choices=[
+                        "none",
+                        "u2net",
+                        "u2netp",
+                        "u2net_human_seg",
+                        "u2net_cloth_seg",
+                        "silueta",
+                        "isnet-general-use",
+                        "isnet-anime",
+                        "sam"
+                    ]
+                )
+                rembg_color = gr.Textbox(label="Remove Background Color")
+            with gr.Row():
+                dir_depth = gr.Number(label="Directory Depth", value=0)
                 run_img = gr.Button("Run Image Processing")
 
             img_output = gr.Textbox(label="Output")
-            run_img.click(img_process_interface,
-                          inputs=[src_dir, des_dir, resize, resize_fill_color, resize_remove_color, rembg_model,
-                                  rembg_color, dir_depth], outputs=img_output)
+            run_img.click(
+                img_process_interface,
+                inputs=[src_dir, des_dir, resize, resize_fill_color, resize_remove_color, rembg_model, rembg_color,
+                        dir_depth],
+                outputs=img_output,
+            )
 
         with gr.Tab("Video to WAV"):
             src_file = gr.Textbox(label="Source Video File")
@@ -117,5 +141,5 @@ def webui(port):
     )
 
 
-if __name__ == '__webui__':
+if __name__ == '__main__':
     webui(10005)
