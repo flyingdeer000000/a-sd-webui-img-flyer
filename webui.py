@@ -105,7 +105,7 @@ def img_process_interface(
     elif resize_remove_alpha == 0:
         resize_remove_color = 'auto'
     else:
-        resize_remove_color = resize_remove_color + hex(resize_fill_alpha)[2:].zfill(2)
+        resize_remove_color = resize_remove_color + hex(resize_remove_alpha)[2:].zfill(2)
 
     if rembg_alpha <= 0:
         rembg_color = ''
