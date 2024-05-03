@@ -20,10 +20,14 @@ def parse_arguments():
                             dest='resize',
                             default='512x512',
                             help='resize size (default: 512x512)')
-    img_parser.add_argument('--resize-color',
-                            dest='resize_color',
+    img_parser.add_argument('--resize-fill',
+                            dest='resize_fill_color',
                             type=str, default='',
-                            help='resize color')
+                            help='resize fill color')
+    img_parser.add_argument('--resize-remove',
+                            dest='resize_remove_color',
+                            type=str, default='',
+                            help='resize remove color')
     img_parser.add_argument('--rembg-model',
                             dest='rembg_model',
                             type=str, default='isnet-anime',
@@ -69,20 +73,24 @@ def parse_arguments():
 
 
 def img_process(args):
-    resize_width, resize_height = map(int, args.resize.split('x'))
+    resize_width, resize_height = map(int, args.resize_image.split('x'))
 
     if args.rembg_model.lower() == 'resize':
         rembg_model = ''
     else:
         rembg_model = args.rembg_model
 
-    args.resize_color = getattr(args, 'resize_color', '0,0,0,0')
+    args.resize_fill_color = getattr(args, 'resize_fill_color', '0,0,0,0')
+    args.resize_remove_color = getattr(args, 'resize_remove_color', '')
     args.rembg_color = getattr(args, 'rembg_color', '0,0,0,0')
     args.dir_depth = getattr(args, 'dir_depth', 0)
 
     print("[directory] source: {}".format(args.src_dir))
     print("[directory] target: {}".format(args.des_dir))
-    print("[resize] size: {} x {} | color: {}".format(resize_width, resize_height, args.resize_color))
+    print("[resize] size: {} x {} | fill color: {} | remove color: {}".format(
+        resize_width, resize_height,
+        args.resize_fill_color, args.resize_remove_color
+    ))
     print("[remove background] model: {} | color: {}".format(rembg_model, args.rembg_color))
     print("[recursive] depth: {}".format(args.dir_depth))
 
@@ -98,9 +106,10 @@ def img_process(args):
     image_process.process(
         src_dir=args.src_dir,
         des_dir=des_dir,
-        r_width=resize_width,
-        r_height=resize_height,
-        r_color=args.resize_color,
+        resize_width=resize_width,
+        resize_height=resize_height,
+        resize_fill_color=args.resize_fill_color,
+        resize_remove_color=args.resize_remove_color,
         rembg_model=rembg_model,
         rembg_color=args.rembg_color,
         recursive_depth=args.dir_depth,
@@ -146,8 +155,9 @@ def testing(a):
     a.subcmd = 'img'
     a.src_dir = 'D:/work/ai/models/psplive/dousha/school/512x768_white/1'
     a.des_dir = 'D:/work/ai/models/psplive/dousha/school/512x768_white/2'
-    a.resize = '512x768'
-    a.resize_color = '255,13,85,256'
+    a.resize_image = '512x768'
+    a.resize_remove_color = 'auto'
+    # a.resize_remove_color = '255,13,85,256'
     a.rembg_model = 'none'
 
     return a

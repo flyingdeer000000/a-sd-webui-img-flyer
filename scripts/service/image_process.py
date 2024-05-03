@@ -8,24 +8,59 @@ import os
 from scripts.service import util
 
 
-def color_string_to_tuple(color_string):
-    if color_string is None or len(color_string) == 0:
-        return 0, 0, 0, 0
+def color_to_transparent(image, target_str: str):
+    # Split the image into individual color channels
 
-    color_values = color_string.strip().split(",")
-    color_values = [int(value) for value in color_values]
-
-    if len(color_values) == 3:
-        # RGB color string
-        return color_values[0], color_values[1], color_values[2], 255
-    elif len(color_values) == 4:
-        # RGBA color string
-        return tuple(color_values)
+    if target_str == 'auto' or target_str == 'def':
+        target = color_4_corners(image)
     else:
-        raise ValueError("Invalid color string format.")
+        target = util.color_string_to_tuple(target_str)
+
+    red, green, blue, alpha = image.split()
+
+    # Create a mask of the color to make transparent
+    mask = red.point(lambda x: 0 if x == target[0] else 255)
+    mask = mask.point(lambda x: 0 if x == green.getpixel((0, 0)) else 255)
+    mask = mask.point(lambda x: 0 if x == blue.getpixel((0, 0)) else 255)
+
+    # Apply the mask to the alpha channel
+    alpha = alpha.point(lambda x: x if x != 0 else 0)
+    alpha.paste(0, mask)
+
+    # Combine the color channels with the modified alpha channel
+    image = Image.merge('RGBA', (red, green, blue, alpha))
+
+    return image
 
 
-def remove_background(
+def color_get_most_used(image):
+    # Get the colors and their counts
+    colors = image.getcolors(image.size[0] * image.size[1])
+
+    # Sort the colors by count in descending order
+    sorted_colors = sorted(colors, key=lambda x: x[0], reverse=True)
+
+    # Return the most used color
+    most_used_color = sorted_colors[0][1]
+    return most_used_color
+
+
+def color_4_corners(image):
+    # Get the color values of the four corners
+    width, height = image.size
+    top_left_color = image.getpixel((0, 0))
+    top_right_color = image.getpixel((width - 1, 0))
+    bottom_left_color = image.getpixel((0, height - 1))
+    bottom_right_color = image.getpixel((width - 1, height - 1))
+
+    # Determine the most frequent color among the corners
+    colors = [top_left_color, top_right_color, bottom_left_color, bottom_right_color]
+    background_color = max(set(colors), key=colors.count)
+
+    return background_color
+
+
+def background_remove(
         rem_src_dir: str,
         rem_des_dir: str,
         bg_color_str: str,
@@ -40,7 +75,7 @@ def remove_background(
 
     files = Path(rem_src_dir).glob('*.[pP][nN][gG]')
 
-    rgba_color = color_string_to_tuple(bg_color_str)
+    rgba_color = util.color_string_to_tuple(bg_color_str)
 
     index = 0
     total = util.file_count(rem_src_dir)
@@ -57,13 +92,13 @@ def remove_background(
                 print("[rembg] [{}/{}] {}".format(index, total, output_path))
 
                 # Fill with RGBA color
-                fill_background(output_path, rgba_color)
+                background_fill(output_path, rgba_color)
 
     if total > 0:
         print("")
 
 
-def fill_background(image_path, bg_color):
+def background_fill(image_path, bg_color):
     image = Image.open(image_path)
     width, height = image.size
     background = Image.new('RGBA', (width, height), bg_color)
@@ -71,16 +106,22 @@ def fill_background(image_path, bg_color):
     background.save(image_path)
 
 
-def resize(
+def resize_image(
         input_path, output_path,
         to_width=512, to_height=512,
-        base_color="0,0,0,0"
+        fill_color="0,0,0,0",
+        remove_color="",
 ):
     image = Image.open(input_path)
+    image = image.convert('RGBA')
+
+    if util.str_exist(remove_color):
+        image = color_to_transparent(image, remove_color)
+
     ratio = image.width / image.height
     to_ratio = to_width / to_height
 
-    color_tuple = color_string_to_tuple(base_color)
+    color_tuple = util.color_string_to_tuple(fill_color)
 
     if ratio > to_ratio:
         new_width = to_width
@@ -118,7 +159,8 @@ def resize_directory(
         resize_des_dir,
         width=512,
         height=512,
-        resize_color="0,0,0,0",
+        fill_color="0,0,0,0",
+        remove_color="",
 ):
     print("[resize] {} ---> {} ".format(resize_src_dir, resize_des_dir))
 
@@ -133,7 +175,7 @@ def resize_directory(
         if filename.lower().endswith('.png'):
             image_path = os.path.join(resize_src_dir, filename)
             output_path = os.path.join(resize_des_dir, filename)
-            resize(image_path, output_path, width, height, resize_color)
+            resize_image(image_path, output_path, width, height, fill_color, remove_color)
             index = index + 1
             print("[resize] [{}/{}] {} ".format(index, total, output_path))
 
@@ -144,8 +186,9 @@ def resize_directory(
 def process(
         src_dir,
         des_dir,
-        r_width=512, r_height=512,
-        r_color="",
+        resize_width=512, resize_height=512,
+        resize_fill_color="",
+        resize_remove_color="",
         resize_exec=True,
         rembg_model="",
         rembg_color="",
@@ -156,17 +199,17 @@ def process(
     try:
         src_dir = str(src_dir)
         des_dir = str(des_dir)
-        r_width = int(r_width)
-        r_height = int(r_height)
-        r_color = str(r_color).strip()
+        resize_width = int(resize_width)
+        resize_height = int(resize_height)
+        resize_fill_color = str(resize_fill_color).strip()
         resize_exec = bool(resize_exec)
         rembg_model = str(rembg_model)
         recursive_depth = int(recursive_depth)
 
-        if r_width <= 0:
-            r_width = 512
-        if r_height <= 0:
-            r_height = 512
+        if resize_width <= 0:
+            resize_width = 512
+        if resize_height <= 0:
+            resize_height = 512
 
         os.makedirs(des_dir, mode=0o777, exist_ok=True)
 
@@ -200,11 +243,19 @@ def process(
 
             if rembg_session is None:
                 if resize_exec:
-                    resize_directory(root, des_path, r_width, r_height, r_color)
+                    resize_directory(
+                        root, des_path,
+                        resize_width, resize_height,
+                        resize_fill_color, resize_remove_color
+                    )
             else:
-                remove_background(root, des_path, rembg_color, rembg_session)
+                background_remove(root, des_path, rembg_color, rembg_session)
                 if resize_exec:
-                    resize_directory(des_path, des_path, r_width, r_height, r_color)
+                    resize_directory(
+                        des_path, des_path,
+                        resize_width, resize_height,
+                        resize_fill_color, resize_remove_color
+                    )
     finally:
         elapsed_time = time.time() - start_time
         print(f"[process] elapsed time: {elapsed_time} seconds")

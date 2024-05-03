@@ -63,8 +63,8 @@ def fn_go(
         image_process.process(
             src_dir=str(dir_src),
             des_dir=str(dir_des),
-            r_width=int(resize_width),
-            r_height=int(resize_height),
+            resize_width=int(resize_width),
+            resize_height=int(resize_height),
 
             resize_exec=bool(is_resize),
             rembg_model=str(rembg_model),
