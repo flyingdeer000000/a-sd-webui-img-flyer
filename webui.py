@@ -4,7 +4,8 @@ import sys
 import traceback
 import threading
 
-from scripts.service import image_process, video_process, util
+from scripts.service import image_process, video_process
+from scripts import util
 import gradio as gr
 
 stdout_stream = io.StringIO()
@@ -44,22 +45,36 @@ def get_output():
 
 def capture_console_output(func):
     def wrapper(*args, **kwargs):
+        # Create a thread to capture the stdout and stderr
+        output_thread = threading.Thread(target=capture_output)
+        output_thread.start()
         try:
-            # Create a thread to capture the stdout and stderr
-            output_thread = threading.Thread(target=capture_output)
-            output_thread.start()
-
             result = func(*args, **kwargs)  # Execute the decorated function
-
             # Wait for the thread to finish capturing output
             output_thread.join()
-
-            stdout_value, stderr_value = get_output()
-
-            return f"{result}\n{stdout_value}{stderr_value}"
+            out, err = get_output()
+            message = f"[result]:\n{result}\n\n"
+            if out:
+                message += f"[stdout]\n{out}\n\n"
+            if err:
+                message += f"[stderr]\n{err}\n\n"
+            return message
         except Exception as e:
-            traceback_str = traceback.format_exc()
-            return f"Error occurred:\n{traceback_str}"
+            output_thread.join()
+            out, err = get_output()
+            stack_trace = traceback.format_exc()
+            message = ""
+            if out:
+                message += f"[stdout]\n{out}\n\n"
+            if err:
+                message += f"[stderr]\n{err}\n\n"
+            message += f"[trace]\n{stack_trace}"
+            return message
+        finally:
+            stdout_stream.truncate(0)
+            stdout_stream.seek(0)
+            stderr_stream.truncate(0)
+            stderr_stream.seek(0)
 
     return wrapper
 
@@ -102,8 +117,8 @@ def split_interface(src_dir, des_dir, divider, file_ext):
 @capture_console_output
 def sum_duration_interface(directory):
     total_sec = video_process.duration_sum(directory)
-    time = util.format_time(total_sec)
-    return f"Total Duration: {time}"
+    t = util.format_time(total_sec)
+    return f"Total Duration: {t}"
 
 
 def tab_image_process():
@@ -113,8 +128,8 @@ def tab_image_process():
         des_dir = gr.Textbox(label="Destination Directory")
     with gr.Row():
         resize = gr.Textbox(value="512x512", label="Resize (e.g., 512x512)")
-        resize_fill_color = gr.Textbox(label="Resize Fill Color")
-        resize_remove_color = gr.Textbox(label="Resize Remove Color")
+        resize_fill_color = gr.ColorPicker(label="Resize Fill Color")
+        resize_remove_color = gr.ColorPicker(label="Resize Remove Color")
     with gr.Row():
         rembg_model = gr.Dropdown(
             label="Remove Background Model  "
@@ -133,30 +148,26 @@ def tab_image_process():
                 "sam"
             ]
         )
-        rembg_color = gr.Textbox(label="Remove Background Color")
+        rembg_color = gr.ColorPicker(label="Remove Background Color")
     with gr.Row():
         dir_depth = gr.Number(label="Directory Depth", value=0)
         run_img = gr.Button("Run Image Processing")
-
-    img_output = gr.Textbox(label="Output")
+    with gr.Row():
+        result = gr.TextArea(label="Result")
     run_img.click(
         img_process_interface,
         inputs=[src_dir, des_dir, resize, resize_fill_color, resize_remove_color, rembg_model, rembg_color,
                 dir_depth],
-        outputs=img_output,
+        outputs=[result]
     )
-
-    return img_output
 
 
 def tab_video_to_wav():
     src_file = gr.Textbox(label="Source Video File")
     des_file = gr.Textbox(label="Destination WAV File")
     run_wav = gr.Button("Convert to WAV")
-    wav_output = gr.Textbox(label="Output")
-    run_wav.click(to_wav_interface, inputs=[src_file, des_file], outputs=wav_output)
-
-    return wav_output
+    result = gr.TextArea(label="Result")
+    run_wav.click(to_wav_interface, inputs=[src_file, des_file], outputs=[result])
 
 
 def tab_media_split():
@@ -165,62 +176,74 @@ def tab_media_split():
     divider = gr.Number(label="Divider", value=2)
     file_ext = gr.Textbox(label="File Extension", value="wav")
     run_split = gr.Button("Split Video")
-    split_output = gr.Textbox(label="Output")
-    run_split.click(split_interface, inputs=[split_src_dir, split_des_dir, divider, file_ext],
-                    outputs=split_output)
-
-    return split_output
+    result = gr.TextArea(label="Result")
+    run_split.click(
+        split_interface,
+        inputs=[split_src_dir, split_des_dir, divider, file_ext],
+        outputs=[result]
+    )
 
 
 def tab_media_sum_duration():
     sum_dir = gr.Textbox(label="Directory")
     run_sum = gr.Button("Sum Media Duration")
-    sum_output = gr.Textbox(label="Output")
-    run_sum.click(sum_duration_interface, inputs=[sum_dir], outputs=sum_output)
-
-    return sum_output
+    result = gr.TextArea(label="Result")
+    run_sum.click(sum_duration_interface, inputs=[sum_dir], outputs=[result])
 
 
 def webui(port):
     with gr.Blocks() as demo:
         with gr.Tab("Image"):
-            img_output = tab_image_process()
+            tab_image_process()
 
         with gr.Tab("Extract Video Sound"):
-            wav_output = tab_video_to_wav()
+            tab_video_to_wav()
 
         with gr.Tab("Media Split"):
-            split_output = tab_media_split()
+            tab_media_split()
 
         with gr.Tab("Media Duration"):
-            sum_output = tab_media_sum_duration()
+            tab_media_sum_duration()
+
+        text_output = gr.Textbox(label="Console")
 
         def clear_output():
             stdout_stream.truncate(0)
             stderr_stream.truncate(0)
-            img_output.value = ''
-            wav_output.value = ''
-            split_output.value = ''
-            sum_output.value = ''
+            text_output.value = '[clear]'
 
         clear_button = gr.Button("Clear Output")
         clear_button.click(clear_output)
 
+    """
     def update_output():
-
         while True:
             stdout_value, stderr_value = get_output()
 
-            img_output.value = stdout_value + stderr_value
-            wav_output.value = stdout_value + stderr_value
-            split_output.value = stdout_value + stderr_value
-            sum_output.value = stdout_value + stderr_value
+            if stdout_value or stderr_value:  # Check if there is new content
+
+                if text_output.value is None:
+                    text_output.value = ''
+
+                if stdout_value:
+                    text_output.value += stdout_value
+
+                if stderr_value:
+                    text_output.value += stderr_value
+
+            # Clear the captured output
+            stdout_stream.truncate(0)
+            stderr_stream.truncate(0)
+
+            time.sleep(0.5)  # Add a small delay before checking again
 
     output_thread = threading.Thread(target=update_output)
     output_thread.start()
+    """
 
-    demo.launch(
+    demo.queue().launch(
         server_port=port,
+        show_error=True,
         debug=True
     )
 

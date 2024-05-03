@@ -6,7 +6,7 @@ from PIL import Image
 import rembg
 import os
 
-from scripts.service import util
+from scripts import util
 
 """
     return (abs(r1 - r2) <= threshold

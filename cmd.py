@@ -1,7 +1,8 @@
 import argparse
 import os
 
-from scripts.service import video_process, util, image_process
+from scripts.service import video_process, image_process
+from scripts import util
 
 
 def parse_arguments():
