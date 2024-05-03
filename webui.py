@@ -84,7 +84,7 @@ def img_process_interface(
         src_dir, des_dir,
         resize,
         resize_fill_color, resize_fill_alpha,
-        resize_remove_color, resize_remove_alpha,
+        resize_remove_color, resize_remove_alpha, resize_remove_threshold,
         rembg_model,
         rembg_color, rembg_alpha,
         dir_depth
@@ -119,6 +119,7 @@ def img_process_interface(
         resize_height=resize_height,
         resize_fill_color=resize_fill_color,
         resize_remove_color=resize_remove_color,
+        resize_remove_threshold=resize_remove_threshold,
         rembg_model=rembg_model,
         rembg_color=rembg_color,
         recursive_depth=dir_depth,
@@ -154,8 +155,10 @@ def tab_image_process():
         resize = gr.Textbox(value="512x512", label="Resize (e.g., 512x512)")
         resize_fill_color = gr.ColorPicker(label="Resize Fill Color", value='#000000')
         resize_fill_alpha = gr.Slider(label="Resize Fill Alpha", value=-1, minimum=-1, maximum=255)
+    with gr.Row():
         resize_remove_color = gr.ColorPicker(label="Resize Remove Color", value='#000000')
         resize_remove_alpha = gr.Slider(label="Resize Remove Alpha", value=-1, minimum=-1, maximum=255)
+        resize_remove_threshold = gr.Number(label="Resize Remove Threshold", value=100)
     with gr.Row():
         rembg_model = gr.Dropdown(
             label="Remove Background Model  "
@@ -186,7 +189,7 @@ def tab_image_process():
         inputs=[src_dir, des_dir,
                 resize,
                 resize_fill_color, resize_fill_alpha,
-                resize_remove_color, resize_remove_alpha,
+                resize_remove_color, resize_remove_alpha, resize_remove_threshold,
                 rembg_model,
                 rembg_color, rembg_alpha,
                 dir_depth],

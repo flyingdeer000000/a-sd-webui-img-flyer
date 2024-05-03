@@ -25,9 +25,9 @@ def color_to_transparent(image, target_str, threshold=100):
         target = util.color_string_to_tuple(target_str)
 
     if len(target) >= 4 and target[3] <= 0:
-        return
+        return None
 
-    # Get the pixel data from the image
+        # Get the pixel data from the image
     pixel_data = image.load()
 
     # Iterate over each pixel
@@ -122,12 +122,15 @@ def resize_image(
         to_width=512, to_height=512,
         fill_color="0,0,0,0",
         remove_color="",
+        remove_threshold=100,
 ):
     image = Image.open(input_path)
     image = image.convert('RGBA')
 
     if util.str_exist(remove_color):
-        image = color_to_transparent(image, remove_color)
+        image_ex = color_to_transparent(image, remove_color, remove_threshold)
+        if image_ex is not None:
+            image = image_ex
 
     ratio = image.width / image.height
     to_ratio = to_width / to_height
@@ -165,8 +168,8 @@ def resize_image(
     padded_image.save(output_path)
 
 
-def resize_job(image_path, output_path, width, height, fill_color, remove_color, index, total):
-    resize_image(image_path, output_path, width, height, fill_color, remove_color)
+def resize_job(image_path, output_path, width, height, fill_color, remove_color, remove_threshold, index, total):
+    resize_image(image_path, output_path, width, height, fill_color, remove_color, remove_threshold)
     print("[resize] [{}/{}] {}".format(index, total, output_path))
 
 
@@ -174,7 +177,8 @@ def resize_directory(
         resize_src_dir,
         resize_des_dir,
         width=512, height=512,
-        fill_color="0,0,0,0", remove_color=""
+        fill_color="0,0,0,0", remove_color="",
+        resize_remove_threshold=100,
 ):
     print("[resize] {} ---> {} ".format(resize_src_dir, resize_des_dir))
 
@@ -194,8 +198,13 @@ def resize_directory(
     with concurrent.futures.ThreadPoolExecutor() as executor:
         futures = []
         for index, (image_path, output_path) in enumerate(file_list, start=1):
-            future = executor.submit(resize_job, image_path, output_path, width, height, fill_color, remove_color,
-                                     index, total)
+            future = executor.submit(
+                resize_job,
+                image_path, output_path,
+                width, height,
+                fill_color, remove_color, resize_remove_threshold,
+                index, total
+            )
             futures.append(future)
 
         for future in concurrent.futures.as_completed(futures):
@@ -214,6 +223,7 @@ def process(
         resize_width=512, resize_height=512,
         resize_fill_color="",
         resize_remove_color="",
+        resize_remove_threshold=100,
         resize_exec=True,
         rembg_model="",
         rembg_color="",
@@ -274,7 +284,7 @@ def process(
                     resize_directory(
                         root, des_path,
                         resize_width, resize_height,
-                        resize_fill_color, resize_remove_color
+                        resize_fill_color, resize_remove_color, resize_remove_threshold
                     )
             else:
                 background_remove(root, des_path, rembg_color, rembg_session)
@@ -282,7 +292,7 @@ def process(
                     resize_directory(
                         des_path, des_path,
                         resize_width, resize_height,
-                        resize_fill_color, resize_remove_color
+                        resize_fill_color, resize_remove_color, resize_remove_threshold
                     )
     finally:
         elapsed_time = time.time() - start_time
