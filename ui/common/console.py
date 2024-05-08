@@ -55,16 +55,16 @@ def capture_wrap(func):
             # Wait for the thread to finish capturing output
             output_thread.join()
 
-            result_text = ()
-            result_remain = None
+            result_text = ""
+            result_remain = tuple()
 
             if results is None:
+                results = tuple("")
+
+            if isinstance(results, str):
                 result_text = results
 
-            if results is str:
-                result_text = results
-
-            if results is tuple and len(results) > 0:
+            if isinstance(results, tuple) and len(results) > 0:
                 result_text = str(results[0])
                 result_remain = results[1:]
 

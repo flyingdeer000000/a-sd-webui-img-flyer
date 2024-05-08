@@ -83,7 +83,7 @@ def media_fetch_interface(
         src, des,
         t_start, t_end,
     )
-    return output_path, f"Fetch Done: {ret}"
+    return ret, output_path
 
 
 def tab_image_process():
@@ -192,7 +192,7 @@ def tab_media_fetch():
             num_src_start, num_src_end,
         ],
         outputs=[
-            audio_src, text_result,
+            text_result, audio_src,
         ]
     )
 

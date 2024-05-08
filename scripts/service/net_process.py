@@ -28,7 +28,7 @@ def fetch_by_yt_dlp(
             output_path.unlink()
 
     section_arg = ""
-    if t_start > t_end:
+    if t_end > t_start:
         section_arg = f"""
         --download-sections "*{t_start}-{t_end}"
         """
