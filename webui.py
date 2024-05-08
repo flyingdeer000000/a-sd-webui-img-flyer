@@ -151,11 +151,11 @@ def media_duration_sum_interface(directory):
 def media_fetch_interface(
         src, des, t_start, t_end,
 ):
-    net_process.fetch_by_yt_dlp(
+    output_path, ret = net_process.fetch_by_yt_dlp(
         src, des,
         t_start, t_end,
     )
-    return "Fetch Done"
+    return output_path, f"Fetch Done: {ret}"
 
 
 def tab_image_process():

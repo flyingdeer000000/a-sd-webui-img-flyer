@@ -8,7 +8,7 @@ def fetch_by_yt_dlp(
         des_path,
         t_start,
         t_end,
-        num_attempts=5,
+        num_attempts=3,
         url_base="",
         quiet=False,
         force=True,
@@ -42,17 +42,19 @@ def fetch_by_yt_dlp(
     attempts = 0
     while True:
         try:
-            _ = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT)
+            subret = subprocess.check_output(
+                command, shell=True, stderr=subprocess.STDOUT
+            )
         except Exception as ex:
-            print(ex)
-            traceback.print_exc()
+            print(f"[fetch_by_yt_dlp] failure: {ex}")
             attempts += 1
-            if attempts == num_attempts:
+            if attempts >= num_attempts:
+                traceback.print_exc()
                 return None
         else:
             break
 
     if output_path.exists():
-        return output_path
+        return output_path, subret
     else:
-        return None
+        return None, subret
