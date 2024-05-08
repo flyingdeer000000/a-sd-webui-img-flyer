@@ -1,12 +1,13 @@
 import io
 import os
 import sys
-import traceback
 import threading
+import traceback
 
-from scripts.service import image_process, video_process
-from scripts import util
 import gradio as gr
+
+from scripts import util
+from scripts.service import image_process, video_process, net_process
 
 stdout_stream = io.StringIO()
 stderr_stream = io.StringIO()
@@ -128,22 +129,33 @@ def img_process_interface(
 
 
 @capture_console_output
-def to_wav_interface(src_file, des_file):
+def media_to_wav_interface(src_file, des_file):
     video_process.convert_mp4_to_wav(src_file, des_file)
     return f"Converted WAV file is saved as {des_file}"
 
 
 @capture_console_output
-def split_interface(src_dir, des_dir, divider, file_ext):
+def media_split_interface(src_dir, des_dir, divider, file_ext):
     video_process.duration_split(src_dir, des_dir, divider, file_ext)
     return f"Videos split successfully into {des_dir}"
 
 
 @capture_console_output
-def sum_duration_interface(directory):
+def media_duration_sum_interface(directory):
     total_sec = video_process.duration_sum(directory)
     t = util.format_time(total_sec)
     return f"Total Duration: {t}"
+
+
+@capture_console_output
+def media_fetch_interface(
+        src, des, t_start, t_end,
+):
+    net_process.fetch_by_yt_dlp(
+        src, des,
+        t_start, t_end,
+    )
+    return "Fetch Done"
 
 
 def tab_image_process():
@@ -202,7 +214,7 @@ def tab_video_to_wav():
     des_file = gr.Textbox(label="Destination WAV File")
     run_wav = gr.Button("Convert to WAV")
     result = gr.TextArea(label="Result")
-    run_wav.click(to_wav_interface, inputs=[src_file, des_file], outputs=[result])
+    run_wav.click(media_to_wav_interface, inputs=[src_file, des_file], outputs=[result])
 
 
 def tab_media_split():
@@ -213,7 +225,7 @@ def tab_media_split():
     run_split = gr.Button("Split Video")
     result = gr.TextArea(label="Result")
     run_split.click(
-        split_interface,
+        media_split_interface,
         inputs=[split_src_dir, split_des_dir, divider, file_ext],
         outputs=[result]
     )
@@ -223,7 +235,38 @@ def tab_media_sum_duration():
     sum_dir = gr.Textbox(label="Directory")
     run_sum = gr.Button("Sum Media Duration")
     result = gr.TextArea(label="Result")
-    run_sum.click(sum_duration_interface, inputs=[sum_dir], outputs=[result])
+    run_sum.click(media_duration_sum_interface, inputs=[sum_dir], outputs=[result])
+
+
+def tab_media_fetch():
+    with gr.Row():
+        with gr.Column():
+            text_src_path = gr.Textbox(label="Source Path", value="")
+            text_des_path = gr.Textbox(label="Destination", value="")
+            with gr.Group():
+                with gr.Row():
+                    num_src_start = gr.Number(value=0, label="Start (sec)")
+                    num_src_end = gr.Number(value=0, label="End (sec)")
+                    button_src_url = gr.Button("Fetch Source", variant="primary")
+                with gr.Row():
+                    text_result = gr.TextArea(label="Result")
+        with gr.Column():
+            audio_src = gr.Audio(
+                label="Source",
+                interactive=True,
+                show_download_button=True,
+            )
+
+    button_src_url.click(
+        fn=media_fetch_interface,
+        inputs=[
+            text_src_path, text_des_path,
+            num_src_start, num_src_end,
+        ],
+        outputs=[
+            audio_src, text_result,
+        ]
+    )
 
 
 def webui(port):
@@ -233,6 +276,9 @@ def webui(port):
 
         with gr.Tab("Extract Video Sound"):
             tab_video_to_wav()
+
+        with gr.Tab("Media Fetch"):
+            tab_media_fetch()
 
         with gr.Tab("Media Split"):
             tab_media_split()
