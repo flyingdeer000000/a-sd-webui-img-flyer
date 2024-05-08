@@ -1,86 +1,14 @@
-import io
+
 import os
-import sys
-import threading
-import traceback
 
 import gradio as gr
 
+import ui.common.console as uicon
 from scripts import util
 from scripts.service import image_process, video_process, net_process
 
-stdout_stream = io.StringIO()
-stderr_stream = io.StringIO()
 
-
-class DualStream:
-    def __init__(self, stream1, stream2):
-        self.stream1 = stream1
-        self.stream2 = stream2
-
-    def write(self, text):
-        self.stream1.write(text)
-        self.stream2.write(text)
-
-    def flush(self):
-        self.stream1.flush()
-        self.stream2.flush()
-
-
-def capture_output():
-    # Create the dual stream object
-    dual_stream = DualStream(sys.stdout, stdout_stream)
-
-    # Redirect stdout and stderr to the dual stream
-    sys.stdout = dual_stream
-    sys.stderr = dual_stream
-
-
-def get_output():
-    # Get the captured stdout and stderr
-    stdout_value = stdout_stream.getvalue()
-    stderr_value = stderr_stream.getvalue()
-
-    return stdout_value, stderr_value
-
-
-def capture_console_output(func):
-    def wrapper(*args, **kwargs):
-        # Create a thread to capture the stdout and stderr
-        output_thread = threading.Thread(target=capture_output)
-        output_thread.start()
-        try:
-            result = func(*args, **kwargs)  # Execute the decorated function
-            # Wait for the thread to finish capturing output
-            output_thread.join()
-            out, err = get_output()
-            message = f"[result]:\n{result}\n\n"
-            if out:
-                message += f"[stdout]\n{out}\n\n"
-            if err:
-                message += f"[stderr]\n{err}\n\n"
-            return message
-        except Exception as e:
-            output_thread.join()
-            out, err = get_output()
-            stack_trace = traceback.format_exc()
-            message = ""
-            if out:
-                message += f"[stdout]\n{out}\n\n"
-            if err:
-                message += f"[stderr]\n{err}\n\n"
-            message += f"[trace]\n{stack_trace}"
-            return message
-        finally:
-            stdout_stream.truncate(0)
-            stdout_stream.seek(0)
-            stderr_stream.truncate(0)
-            stderr_stream.seek(0)
-
-    return wrapper
-
-
-@capture_console_output
+@uicon.capture_wrap
 def img_process_interface(
         src_dir, des_dir,
         resize,
@@ -128,26 +56,26 @@ def img_process_interface(
     return f"Processed images are saved in {des_dir}"
 
 
-@capture_console_output
+@uicon.capture_wrap
 def media_to_wav_interface(src_file, des_file):
     video_process.convert_mp4_to_wav(src_file, des_file)
     return f"Converted WAV file is saved as {des_file}"
 
 
-@capture_console_output
+@uicon.capture_wrap
 def media_split_interface(src_dir, des_dir, divider, file_ext):
     video_process.duration_split(src_dir, des_dir, divider, file_ext)
     return f"Videos split successfully into {des_dir}"
 
 
-@capture_console_output
+@uicon.capture_wrap
 def media_duration_sum_interface(directory):
     total_sec = video_process.duration_sum(directory)
     t = util.format_time(total_sec)
     return f"Total Duration: {t}"
 
 
-@capture_console_output
+@uicon.capture_wrap
 def media_fetch_interface(
         src, des, t_start, t_end,
 ):
@@ -289,8 +217,7 @@ def webui(port):
         text_output = gr.Textbox(label="Console")
 
         def clear_output():
-            stdout_stream.truncate(0)
-            stderr_stream.truncate(0)
+            uicon.capture_clear()
             text_output.value = '[clear]'
 
         clear_button = gr.Button("Clear Output")
