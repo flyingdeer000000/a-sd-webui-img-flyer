@@ -83,7 +83,10 @@ def media_fetch_interface(
         src, des,
         t_start, t_end,
     )
-    return ret, output_path
+    if output_path is None:
+        return ret, None
+
+    return output_path.resolve(), output_path
 
 
 def tab_image_process():
