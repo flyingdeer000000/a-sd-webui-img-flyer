@@ -30,8 +30,8 @@ def fetch_by_yt_dlp(
     section_arg = ""
     if t_end > t_start:
         section_arg = f"""
-        --download-sections "*{t_start}-{t_end}"
-        """
+            --download-sections "*{t_start}-{t_end}"
+        """.strip()
 
     quiet = "--quiet --no-warnings" if quiet else ""
     # noqa: E501

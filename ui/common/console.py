@@ -90,3 +90,30 @@ def capture_wrap(func):
             capture_clear()
 
     return wrapper
+
+
+"""
+def update_output():
+    while True:
+        stdout_value, stderr_value = get_output()
+
+        if stdout_value or stderr_value:  # Check if there is new content
+
+            if text_output.value is None:
+                text_output.value = ''
+
+            if stdout_value:
+                text_output.value += stdout_value
+
+            if stderr_value:
+                text_output.value += stderr_value
+
+        # Clear the captured output
+        stdout_stream.truncate(0)
+        stderr_stream.truncate(0)
+
+        time.sleep(0.5)  # Add a small delay before checking again
+
+output_thread = threading.Thread(target=update_output)
+output_thread.start()
+"""
